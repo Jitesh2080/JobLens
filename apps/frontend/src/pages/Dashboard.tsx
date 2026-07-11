@@ -1,10 +1,43 @@
+import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import MatchScoreCard from '../components/MatchScoreCard';
 import SkillGapChart from '../components/SkillGapChart';
+import SuggestionsReport from '../components/SuggestionsReport';
+
+const API = import.meta.env.VITE_API_URL ?? '';
+
+interface Suggestion {
+  missingKeywords: string[];
+  sectionsToReorder: Array<{
+    section: string;
+    currentPosition: string;
+    suggestedPosition: string;
+    reason: string;
+  }>;
+  bulletsToStrengthen: Array<{
+    currentBullet: string;
+    issue: string;
+    suggestion: string;
+  }>;
+  skillsToEmphasize: string[];
+  contentToExpand: Array<{
+    section: string;
+    reason: string;
+  }>;
+  contentToCondense: Array<{
+    section: string;
+    reason: string;
+  }>;
+  overallRecommendation: string;
+}
 
 export default function Dashboard() {
   const { state } = useLocation();
   const navigate = useNavigate();
+  const [suggestions, setSuggestions] = useState<{ data: Suggestion; version: number } | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState('');
 
   if (!state?.match) {
     return (
@@ -20,7 +53,35 @@ export default function Dashboard() {
     );
   }
 
-  const { match } = state;
+  const { match, parsed, resumeId, jobId, jdText } = state;
+
+  async function handleGenerateSuggestions() {
+    if (!resumeId || !jdText) {
+      setError('Missing resume or job description data');
+      return;
+    }
+
+    setIsGenerating(true);
+    setError('');
+
+    try {
+      const { data } = await axios.post(`${API}/api/resume/tailor`, {
+        resumeId,
+        jobId,
+        jdText,
+      });
+
+      setSuggestions({
+        data: data.suggestions,
+        version: data.version,
+      });
+    } catch (err) {
+      console.error(err);
+      setError('Failed to generate suggestions. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -42,6 +103,40 @@ export default function Dashboard() {
       />
 
       <SkillGapChart strengths={match.strengths} gaps={match.gaps} />
+
+      {/* Resume Suggestions Section */}
+      <div className="rounded-xl border border-gray-800 bg-gray-900 p-6 space-y-4">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-white">AI Resume Coach</h3>
+              <p className="text-sm text-gray-400 mt-1">
+                Get specific suggestions on how to improve your resume for this role
+              </p>
+            </div>
+            <button
+              onClick={handleGenerateSuggestions}
+              disabled={isGenerating}
+              className="rounded-lg bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isGenerating ? 'Analyzing...' : 'Get Suggestions'}
+            </button>
+          </div>
+        </div>
+
+        {error && (
+          <div className="rounded-lg bg-red-900/20 border border-red-800 px-4 py-3 text-sm text-red-300">
+            {error}
+          </div>
+        )}
+
+        {suggestions && (
+          <SuggestionsReport
+            suggestions={suggestions.data}
+            version={suggestions.version}
+          />
+        )}
+      </div>
     </div>
   );
 }

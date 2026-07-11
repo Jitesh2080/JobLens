@@ -27,7 +27,13 @@ export default function Upload() {
       const { data: matchData } = await axios.post(`${API}/api/jobs/analyze`, { jdText });
 
       navigate('/dashboard', {
-        state: { parsed: resumeData.parsed, match: matchData },
+        state: {
+          parsed: resumeData.parsed,
+          resumeId: resumeData.docId,
+          match: matchData,
+          jobId: matchData.jobId,
+          jdText: jdText,
+        },
       });
     } catch (err) {
       setError('Something went wrong. Check the console for details.');

@@ -22,3 +22,13 @@ CREATE TABLE IF NOT EXISTS match_results (
   recommendation TEXT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS resume_suggestions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  resume_id UUID REFERENCES resumes(id) ON DELETE CASCADE,
+  job_id UUID REFERENCES jobs(id) ON DELETE CASCADE,
+  suggestions_json JSONB NOT NULL,
+  version INTEGER NOT NULL DEFAULT 1,
+  user_prompt TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
