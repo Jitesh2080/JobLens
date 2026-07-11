@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { upload } from '../middleware/upload';
 import { runMatchAgent } from '../agents/matchAgent';
 import { runCoverLetterAgent } from '../agents/coverLetterAgent';
+import { runInterviewAgent } from '../agents/interviewAgent';
 import { parseFile } from '../lib/parser';
 import { db } from '../db/client';
 
@@ -70,5 +71,33 @@ jobsRouter.post('/cover-letter', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to generate cover letter' });
+  }
+});
+
+jobsRouter.post('/interview-prep', async (req, res) => {
+  try {
+    const { resumeId, jobId, jdText, gaps } = req.body;
+
+    if (!resumeId || !jdText) {
+      res.status(400).json({ error: 'resumeId and jdText are required' });
+      return;
+    }
+
+    // Run the interview prep agent
+    const result = await runInterviewAgent(resumeId, jdText, gaps);
+
+    // Save to database
+    const { rows } = await db.query(
+      'INSERT INTO interview_preps (resume_id, job_id, questions_json) VALUES ($1, $2, $3) RETURNING id',
+      [resumeId, jobId, JSON.stringify(result)]
+    );
+
+    res.json({
+      id: rows[0].id,
+      questions: result,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to generate interview prep' });
   }
 });

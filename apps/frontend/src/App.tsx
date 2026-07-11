@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Upload from './pages/Upload';
 import Dashboard from './pages/Dashboard';
+import InterviewPrep from './pages/InterviewPrep';
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
             <Route path="/" element={<Navigate to="/upload" replace />} />
             <Route path="/upload" element={<Upload />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/interview-prep" element={<InterviewPrep />} />
           </Routes>
         </main>
       </div>

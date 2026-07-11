@@ -43,3 +43,11 @@ CREATE TABLE IF NOT EXISTS cover_letters (
   user_prompt TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS interview_preps (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  resume_id UUID REFERENCES resumes(id) ON DELETE CASCADE,
+  job_id UUID REFERENCES jobs(id) ON DELETE CASCADE,
+  questions_json JSONB NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);

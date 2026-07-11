@@ -40,6 +40,7 @@ export default function Dashboard() {
   const [coverLetter, setCoverLetter] = useState<{ content: string; companyName: string; version: number } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingCoverLetter, setIsGeneratingCoverLetter] = useState(false);
+  const [isGeneratingInterviewPrep, setIsGeneratingInterviewPrep] = useState(false);
   const [error, setError] = useState('');
 
   if (!state?.match) {
@@ -115,6 +116,35 @@ export default function Dashboard() {
     }
   }
 
+  async function handleGenerateInterviewPrep() {
+    if (!resumeId || !jdText) {
+      setError('Missing resume or job description data');
+      return;
+    }
+
+    setIsGeneratingInterviewPrep(true);
+    setError('');
+
+    try {
+      const { data } = await axios.post(`${API}/api/jobs/interview-prep`, {
+        resumeId,
+        jobId,
+        jdText,
+        gaps: match.gaps,
+      });
+
+      // Navigate to interview prep page with questions
+      navigate('/interview-prep', {
+        state: { questions: data.questions },
+      });
+    } catch (err) {
+      console.error(err);
+      setError('Failed to generate interview prep. Please try again.');
+    } finally {
+      setIsGeneratingInterviewPrep(false);
+    }
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -185,6 +215,25 @@ export default function Dashboard() {
             className="rounded-lg bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isGeneratingCoverLetter ? 'Generating...' : 'Generate Cover Letter'}
+          </button>
+        </div>
+      </div>
+
+      {/* Interview Prep Section */}
+      <div className="rounded-xl border border-gray-800 bg-gray-900 p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-white">Interview Preparation</h3>
+            <p className="text-sm text-gray-400 mt-1">
+              Get likely interview questions with talking points from your resume
+            </p>
+          </div>
+          <button
+            onClick={handleGenerateInterviewPrep}
+            disabled={isGeneratingInterviewPrep}
+            className="rounded-lg bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isGeneratingInterviewPrep ? 'Generating...' : 'Prepare for Interview'}
           </button>
         </div>
       </div>
