@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { upload } from '../middleware/upload';
 import { runMatchAgent } from '../agents/matchAgent';
+import { runCoverLetterAgent } from '../agents/coverLetterAgent';
 import { parseFile } from '../lib/parser';
 import { db } from '../db/client';
 
@@ -32,5 +33,42 @@ jobsRouter.post('/analyze', upload.single('jd'), async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to analyze job description' });
+  }
+});
+
+jobsRouter.post('/cover-letter', async (req, res) => {
+  try {
+    const { resumeId, jobId, jdText, companyName, customPrompt } = req.body;
+
+    if (!resumeId || !jdText) {
+      res.status(400).json({ error: 'resumeId and jdText are required' });
+      return;
+    }
+
+    // Get the latest version number for this resume + job combo
+    const { rows: versionRows } = await db.query(
+      'SELECT COALESCE(MAX(version), 0) as max_version FROM cover_letters WHERE resume_id = $1 AND job_id = $2',
+      [resumeId, jobId]
+    );
+    const nextVersion = (versionRows[0].max_version as number) + 1;
+
+    // Run the cover letter agent
+    const result = await runCoverLetterAgent(resumeId, jdText, companyName, customPrompt);
+
+    // Save to database
+    const { rows } = await db.query(
+      'INSERT INTO cover_letters (resume_id, job_id, content, company_name, version, user_prompt) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+      [resumeId, jobId, result.content, result.companyName, nextVersion, customPrompt ?? null]
+    );
+
+    res.json({
+      id: rows[0].id,
+      content: result.content,
+      companyName: result.companyName,
+      version: nextVersion,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to generate cover letter' });
   }
 });

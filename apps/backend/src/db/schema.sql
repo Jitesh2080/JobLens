@@ -32,3 +32,14 @@ CREATE TABLE IF NOT EXISTS resume_suggestions (
   user_prompt TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS cover_letters (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  resume_id UUID REFERENCES resumes(id) ON DELETE CASCADE,
+  job_id UUID REFERENCES jobs(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  company_name TEXT,
+  version INTEGER NOT NULL DEFAULT 1,
+  user_prompt TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
