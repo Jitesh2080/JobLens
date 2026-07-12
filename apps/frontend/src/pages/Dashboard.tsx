@@ -36,7 +36,9 @@ interface Suggestion {
 export default function Dashboard() {
   const { state } = useLocation();
   const navigate = useNavigate();
-  const [suggestions, setSuggestions] = useState<{ data: Suggestion; version: number } | null>(null);
+  type SuggestionEntry = { data: Suggestion; version: number };
+  const [suggestionHistory, setSuggestionHistory] = useState<SuggestionEntry[]>([]);
+  const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [coverLetter, setCoverLetter] = useState<{ content: string; companyName: string; version: number } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingCoverLetter, setIsGeneratingCoverLetter] = useState(false);
@@ -79,9 +81,10 @@ export default function Dashboard() {
         customPrompt: suggestionPrompt.trim() || undefined,
       });
 
-      setSuggestions({
-        data: data.suggestions,
-        version: data.version,
+      setSuggestionHistory(prev => {
+        const updated = [...prev, { data: data.suggestions, version: data.version }];
+        setSuggestionIndex(updated.length - 1);
+        return updated;
       });
     } catch (err) {
       console.error(err);
@@ -205,11 +208,42 @@ export default function Dashboard() {
           </div>
         )}
 
-        {suggestions && (
-          <SuggestionsReport
-            suggestions={suggestions.data}
-            version={suggestions.version}
-          />
+        {suggestionHistory.length > 0 && (
+          <>
+            {suggestionHistory.length > 1 && (
+              <div className="flex items-center gap-3 py-2">
+                <button
+                  onClick={() => setSuggestionIndex(i => Math.max(0, i - 1))}
+                  disabled={suggestionIndex === 0}
+                  className="rounded-lg bg-gray-800 px-3 py-1.5 text-sm text-white hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  ←
+                </button>
+                <input
+                  type="range"
+                  min={0}
+                  max={suggestionHistory.length - 1}
+                  value={suggestionIndex}
+                  onChange={(e) => setSuggestionIndex(Number(e.target.value))}
+                  className="flex-1 accent-indigo-500"
+                />
+                <button
+                  onClick={() => setSuggestionIndex(i => Math.min(suggestionHistory.length - 1, i + 1))}
+                  disabled={suggestionIndex === suggestionHistory.length - 1}
+                  className="rounded-lg bg-gray-800 px-3 py-1.5 text-sm text-white hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  →
+                </button>
+                <span className="text-xs text-gray-400 whitespace-nowrap">
+                  Version {suggestionHistory[suggestionIndex].version} of {suggestionHistory[suggestionHistory.length - 1].version}
+                </span>
+              </div>
+            )}
+            <SuggestionsReport
+              suggestions={suggestionHistory[suggestionIndex].data}
+              version={suggestionHistory[suggestionIndex].version}
+            />
+          </>
         )}
       </div>
 
