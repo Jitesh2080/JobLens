@@ -42,6 +42,9 @@ export default function Dashboard() {
   const [isGeneratingCoverLetter, setIsGeneratingCoverLetter] = useState(false);
   const [isGeneratingInterviewPrep, setIsGeneratingInterviewPrep] = useState(false);
   const [error, setError] = useState('');
+  const [suggestionPrompt, setSuggestionPrompt] = useState('');
+  const [coverLetterPrompt, setCoverLetterPrompt] = useState('');
+  const [companyName, setCompanyName] = useState('');
 
   if (!state?.match) {
     return (
@@ -73,6 +76,7 @@ export default function Dashboard() {
         resumeId,
         jobId,
         jdText,
+        customPrompt: suggestionPrompt.trim() || undefined,
       });
 
       setSuggestions({
@@ -101,6 +105,8 @@ export default function Dashboard() {
         resumeId,
         jobId,
         jdText,
+        companyName: companyName.trim() || undefined,
+        customPrompt: coverLetterPrompt.trim() || undefined,
       });
 
       setCoverLetter({
@@ -184,6 +190,13 @@ export default function Dashboard() {
               {isGenerating ? 'Analyzing...' : 'Get Suggestions'}
             </button>
           </div>
+          <textarea
+            rows={2}
+            value={suggestionPrompt}
+            onChange={(e) => setSuggestionPrompt(e.target.value)}
+            placeholder="Optional: Add custom instructions (e.g. 'Focus on backend roles', 'I'm targeting FAANG companies')"
+            className="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-3 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
         </div>
 
         {error && (
@@ -216,6 +229,22 @@ export default function Dashboard() {
           >
             {isGeneratingCoverLetter ? 'Generating...' : 'Generate Cover Letter'}
           </button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <input
+            type="text"
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+            placeholder="Company name (optional — auto-detected if blank)"
+            className="rounded-lg border border-gray-700 bg-gray-950 px-4 py-3 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <input
+            type="text"
+            value={coverLetterPrompt}
+            onChange={(e) => setCoverLetterPrompt(e.target.value)}
+            placeholder="Custom instructions (e.g. 'Mention I'm open to relocation')"
+            className="rounded-lg border border-gray-700 bg-gray-950 px-4 py-3 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
         </div>
       </div>
 
