@@ -14,7 +14,7 @@ export async function runCoverLetterAgent(
   customPrompt?: string
 ): Promise<CoverLetter> {
   // Retrieve relevant resume achievements from KB
-  const resumeChunks = await queryKBMultiSource(jdText, ['resume', 'github'], 5);
+  const resumeChunks = await queryKBMultiSource(jdText, ['resume', 'github', 'certificate', 'portfolio'], 5);
   const resumeContext = resumeChunks.map((c) => c.text).join('\n\n');
 
   // Extract company name from JD if not provided

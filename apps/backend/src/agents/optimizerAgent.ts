@@ -33,7 +33,7 @@ export async function runOptimizerAgent(
   customPrompt?: string
 ): Promise<ResumeSuggestions> {
   // Retrieve relevant resume sections from KB
-  const resumeChunks = await queryKBMultiSource(jdText, ['resume', 'github'], 5);
+  const resumeChunks = await queryKBMultiSource(jdText, ['resume', 'github', 'certificate', 'portfolio'], 5);
   const resumeContext = resumeChunks.map((c) => c.text).join('\n\n');
 
   const llm = new ChatGroq({

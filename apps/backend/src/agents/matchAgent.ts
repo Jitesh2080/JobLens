@@ -17,7 +17,7 @@ export async function runMatchAgent(jdText: string, resumeDocId?: string): Promi
   await upsertChunks(jdChunks, { source: 'jd', docId: jdDocId });
 
   // Retrieve relevant resume chunks
-  const resumeChunks = await queryKBMultiSource(jdText, ['resume', 'github'], 5);
+  const resumeChunks = await queryKBMultiSource(jdText, ['resume', 'github', 'certificate', 'portfolio'], 5);
   const resumeContext = resumeChunks.map((c) => c.text).join('\n\n');
 
   const llm = new ChatGroq({
