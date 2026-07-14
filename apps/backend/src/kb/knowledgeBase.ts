@@ -24,7 +24,7 @@ export async function initCollection(): Promise<void> {
 }
 
 export interface ChunkMetadata {
-  source: 'resume' | 'jd' | 'github';
+  source: 'resume' | 'jd' | 'github' | 'certificate' | 'portfolio';
   docId: string;
   chunkIndex: number;
   text: string;
@@ -43,7 +43,7 @@ export async function upsertChunks(chunks: string[], metadata: Omit<ChunkMetadat
   await client.upsert(COLLECTION, { wait: true, points });
 }
 
-export async function queryKB(text: string, filter?: { source: 'resume' | 'jd' | 'github' }, topK = 5): Promise<ChunkMetadata[]> {
+export async function queryKB(text: string, filter?: { source: 'resume' | 'jd' | 'github' | 'certificate' | 'portfolio' }, topK = 5): Promise<ChunkMetadata[]> {
   const vector = await embeddings.embedQuery(text);
 
   const results = await client.search(COLLECTION, {
@@ -56,7 +56,7 @@ export async function queryKB(text: string, filter?: { source: 'resume' | 'jd' |
   return results.map((r) => r.payload as ChunkMetadata);
 }
 
-export async function queryKBMultiSource(text: string, sources: Array<'resume' | 'jd' | 'github'>, topKPerSource = 5): Promise<ChunkMetadata[]> {
+export async function queryKBMultiSource(text: string, sources: Array<'resume' | 'jd' | 'github' | 'certificate' | 'portfolio'>, topKPerSource = 5): Promise<ChunkMetadata[]> {
   const vector = await embeddings.embedQuery(text);
 
   const results = await client.search(COLLECTION, {
