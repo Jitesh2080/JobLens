@@ -8,6 +8,7 @@ export default function Upload() {
   const navigate = useNavigate();
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [jdText, setJdText] = useState('');
+  const [githubUrl, setGithubUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -23,6 +24,14 @@ export default function Upload() {
       const formData = new FormData();
       formData.append('resume', resumeFile);
       const { data: resumeData } = await axios.post(`${API}/api/resume/upload`, formData);
+
+      // Ingest GitHub README if URL provided
+      if (githubUrl.trim()) {
+        await axios.post(`${API}/api/kb/github`, {
+          repoUrl: githubUrl.trim(),
+          resumeId: resumeData.docId,
+        });
+      }
 
       const { data: matchData } = await axios.post(`${API}/api/jobs/analyze`, { jdText });
 
@@ -57,6 +66,23 @@ export default function Upload() {
           className="block w-full text-sm text-gray-400 file:mr-4 file:rounded file:border-0 file:bg-indigo-600 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-indigo-500"
         />
         {resumeFile && <p className="text-xs text-gray-400">{resumeFile.name}</p>}
+      </div>
+
+      {/* GitHub repo URL */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-300">
+          GitHub Repository <span className="text-gray-500 font-normal">(optional)</span>
+        </label>
+        <input
+          type="url"
+          value={githubUrl}
+          onChange={(e) => setGithubUrl(e.target.value)}
+          placeholder="https://github.com/username/repo"
+          className="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+        <p className="text-xs text-gray-500">
+          Add a GitHub project to strengthen your match context with real project experience
+        </p>
       </div>
 
       {/* JD input */}
