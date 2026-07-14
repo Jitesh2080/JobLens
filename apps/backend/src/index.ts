@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import { resumeRouter } from './routes/resume';
 import { jobsRouter } from './routes/jobs';
+import { kbRouter } from './routes/kb';
 import { initCollection } from './kb/knowledgeBase';
 
 const app = express();
@@ -13,6 +14,7 @@ app.use(express.json());
 
 app.use('/api/resume', resumeRouter);
 app.use('/api/jobs', jobsRouter);
+app.use('/api/kb', kbRouter);
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
