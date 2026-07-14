@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { ChatGroq } from '@langchain/groq';
 import { HumanMessage } from '@langchain/core/messages';
-import { upsertChunks, queryKB } from '../kb/knowledgeBase';
+import { upsertChunks, queryKBMultiSource } from '../kb/knowledgeBase';
 
 export interface MatchResult {
   score: number;
@@ -17,7 +17,7 @@ export async function runMatchAgent(jdText: string, resumeDocId?: string): Promi
   await upsertChunks(jdChunks, { source: 'jd', docId: jdDocId });
 
   // Retrieve relevant resume chunks
-  const resumeChunks = await queryKB(jdText, { source: 'resume' }, 8);
+  const resumeChunks = await queryKBMultiSource(jdText, ['resume', 'github'], 5);
   const resumeContext = resumeChunks.map((c) => c.text).join('\n\n');
 
   const llm = new ChatGroq({

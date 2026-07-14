@@ -1,6 +1,6 @@
 import { ChatGroq } from '@langchain/groq';
 import { HumanMessage } from '@langchain/core/messages';
-import { queryKB } from '../kb/knowledgeBase';
+import { queryKBMultiSource } from '../kb/knowledgeBase';
 
 export interface CoverLetter {
   content: string;
@@ -14,7 +14,7 @@ export async function runCoverLetterAgent(
   customPrompt?: string
 ): Promise<CoverLetter> {
   // Retrieve relevant resume achievements from KB
-  const resumeChunks = await queryKB(jdText, { source: 'resume' }, 8);
+  const resumeChunks = await queryKBMultiSource(jdText, ['resume', 'github'], 5);
   const resumeContext = resumeChunks.map((c) => c.text).join('\n\n');
 
   // Extract company name from JD if not provided

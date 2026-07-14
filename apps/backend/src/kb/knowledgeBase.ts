@@ -55,3 +55,18 @@ export async function queryKB(text: string, filter?: { source: 'resume' | 'jd' |
 
   return results.map((r) => r.payload as ChunkMetadata);
 }
+
+export async function queryKBMultiSource(text: string, sources: Array<'resume' | 'jd' | 'github'>, topKPerSource = 5): Promise<ChunkMetadata[]> {
+  const vector = await embeddings.embedQuery(text);
+
+  const results = await client.search(COLLECTION, {
+    vector,
+    limit: topKPerSource * sources.length,
+    filter: {
+      should: sources.map((s) => ({ key: 'source', match: { value: s } })),
+    },
+    with_payload: true,
+  });
+
+  return results.map((r) => r.payload as ChunkMetadata);
+}

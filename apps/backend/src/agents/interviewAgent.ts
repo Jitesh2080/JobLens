@@ -1,6 +1,6 @@
 import { ChatGroq } from '@langchain/groq';
 import { HumanMessage } from '@langchain/core/messages';
-import { queryKB } from '../kb/knowledgeBase';
+import { queryKBMultiSource } from '../kb/knowledgeBase';
 
 export interface InterviewQuestion {
   question: string;
@@ -20,7 +20,7 @@ export async function runInterviewAgent(
   gaps?: string[]
 ): Promise<InterviewPrep> {
   // Retrieve relevant resume sections from KB
-  const resumeChunks = await queryKB(jdText, { source: 'resume' }, 10);
+  const resumeChunks = await queryKBMultiSource(jdText, ['resume', 'github'], 5);
   const resumeContext = resumeChunks.map((c) => c.text).join('\n\n');
 
   const llm = new ChatGroq({
