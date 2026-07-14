@@ -9,6 +9,8 @@ export default function Upload() {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [jdText, setJdText] = useState('');
   const [githubUrl, setGithubUrl] = useState('');
+  const [certificateFile, setCertificateFile] = useState<File | null>(null);
+  const [portfolioText, setPortfolioText] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -25,13 +27,35 @@ export default function Upload() {
       formData.append('resume', resumeFile);
       const { data: resumeData } = await axios.post(`${API}/api/resume/upload`, formData);
 
-      // Ingest GitHub README if URL provided
+      // Run all KB ingestion in parallel after resume is uploaded
+      const kbTasks: Promise<unknown>[] = [];
+
       if (githubUrl.trim()) {
-        await axios.post(`${API}/api/kb/github`, {
-          repoUrl: githubUrl.trim(),
-          resumeId: resumeData.docId,
-        });
+        kbTasks.push(
+          axios.post(`${API}/api/kb/github`, {
+            repoUrl: githubUrl.trim(),
+            resumeId: resumeData.docId,
+          })
+        );
       }
+
+      if (certificateFile) {
+        const certForm = new FormData();
+        certForm.append('certificate', certificateFile);
+        certForm.append('resumeId', resumeData.docId);
+        kbTasks.push(axios.post(`${API}/api/kb/certificate`, certForm));
+      }
+
+      if (portfolioText.trim()) {
+        kbTasks.push(
+          axios.post(`${API}/api/kb/portfolio`, {
+            resumeId: resumeData.docId,
+            text: portfolioText.trim(),
+          })
+        );
+      }
+
+      if (kbTasks.length > 0) await Promise.all(kbTasks);
 
       const { data: matchData } = await axios.post(`${API}/api/jobs/analyze`, { jdText });
 
@@ -68,21 +92,54 @@ export default function Upload() {
         {resumeFile && <p className="text-xs text-gray-400">{resumeFile.name}</p>}
       </div>
 
-      {/* GitHub repo URL */}
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-300">
-          GitHub Repository <span className="text-gray-500 font-normal">(optional)</span>
-        </label>
-        <input
-          type="url"
-          value={githubUrl}
-          onChange={(e) => setGithubUrl(e.target.value)}
-          placeholder="https://github.com/username/repo"
-          className="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
-        <p className="text-xs text-gray-500">
-          Add a GitHub project to strengthen your match context with real project experience
-        </p>
+      {/* Optional context section */}
+      <div className="rounded-xl border border-gray-800 bg-gray-900/50 p-5 space-y-5">
+        <div>
+          <p className="text-sm font-medium text-gray-300">Boost Your Match Score</p>
+          <p className="text-xs text-gray-500 mt-1">Add optional context to give the AI a richer picture of your skills</p>
+        </div>
+
+        {/* GitHub repo URL */}
+        <div className="space-y-1.5">
+          <label className="block text-sm text-gray-400">
+            GitHub Repository <span className="text-gray-600">(optional)</span>
+          </label>
+          <input
+            type="url"
+            value={githubUrl}
+            onChange={(e) => setGithubUrl(e.target.value)}
+            placeholder="https://github.com/username/repo"
+            className="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+
+        {/* Certificate upload */}
+        <div className="space-y-1.5">
+          <label className="block text-sm text-gray-400">
+            Certificate <span className="text-gray-600">(optional — PDF or image)</span>
+          </label>
+          <input
+            type="file"
+            accept=".pdf,image/png,image/jpeg,image/webp"
+            onChange={(e) => setCertificateFile(e.target.files?.[0] ?? null)}
+            className="block w-full text-sm text-gray-400 file:mr-4 file:rounded file:border-0 file:bg-gray-700 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-gray-600"
+          />
+          {certificateFile && <p className="text-xs text-gray-400">{certificateFile.name}</p>}
+        </div>
+
+        {/* Portfolio / case study */}
+        <div className="space-y-1.5">
+          <label className="block text-sm text-gray-400">
+            Portfolio / Case Study <span className="text-gray-600">(optional)</span>
+          </label>
+          <textarea
+            rows={4}
+            value={portfolioText}
+            onChange={(e) => setPortfolioText(e.target.value)}
+            placeholder="Describe a project or case study — what you built, the tech stack, your role, and the impact..."
+            className="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-3 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
       </div>
 
       {/* JD input */}
