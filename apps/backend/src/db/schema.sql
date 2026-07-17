@@ -1,5 +1,17 @@
+-- Users table for authentication
+CREATE TABLE IF NOT EXISTS users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  google_id TEXT UNIQUE NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  name TEXT NOT NULL,
+  picture TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  last_login TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS resumes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   filename TEXT NOT NULL,
   raw_text TEXT NOT NULL,
   parsed_json JSONB NOT NULL,
@@ -8,6 +20,7 @@ CREATE TABLE IF NOT EXISTS resumes (
 
 CREATE TABLE IF NOT EXISTS jobs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   jd_text TEXT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );

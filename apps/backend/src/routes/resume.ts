@@ -1,12 +1,16 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { upload } from '../middleware/upload';
 import { runResumeAgent } from '../agents/resumeAgent';
 import { runOptimizerAgent } from '../agents/optimizerAgent';
 import { db } from '../db/client';
+import { authenticateToken, AuthRequest } from '../middleware/auth';
 
 export const resumeRouter = Router();
 
-resumeRouter.post('/upload', upload.single('resume'), async (req, res) => {
+// Apply authentication to all resume routes
+resumeRouter.use(authenticateToken);
+
+resumeRouter.post('/upload', upload.single('resume'), async (req: AuthRequest, res: Response) => {
   try {
     if (!req.file) {
       res.status(400).json({ error: 'No file uploaded' });
@@ -17,8 +21,8 @@ resumeRouter.post('/upload', upload.single('resume'), async (req, res) => {
     const result = await runResumeAgent(buffer, mimetype, originalname);
 
     await db.query(
-      'INSERT INTO resumes (id, filename, raw_text, parsed_json) VALUES ($1, $2, $3, $4)',
-      [result.docId, originalname, result.rawText, JSON.stringify(result.parsed)]
+      'INSERT INTO resumes (id, user_id, filename, raw_text, parsed_json) VALUES ($1, $2, $3, $4, $5)',
+      [result.docId, req.userId, originalname, result.rawText, JSON.stringify(result.parsed)]
     );
 
     res.json({ docId: result.docId, parsed: result.parsed });
@@ -28,12 +32,23 @@ resumeRouter.post('/upload', upload.single('resume'), async (req, res) => {
   }
 });
 
-resumeRouter.post('/tailor', async (req, res) => {
+resumeRouter.post('/tailor', async (req: AuthRequest, res: Response) => {
   try {
     const { resumeId, jobId, jdText, customPrompt } = req.body;
 
     if (!resumeId || !jdText) {
       res.status(400).json({ error: 'resumeId and jdText are required' });
+      return;
+    }
+
+    // Verify resume belongs to user
+    const { rows: resumeRows } = await db.query(
+      'SELECT id FROM resumes WHERE id = $1 AND user_id = $2',
+      [resumeId, req.userId]
+    );
+
+    if (resumeRows.length === 0) {
+      res.status(403).json({ error: 'Resume not found or access denied' });
       return;
     }
 

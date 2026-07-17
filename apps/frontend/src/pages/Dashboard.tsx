@@ -64,6 +64,11 @@ export default function Dashboard() {
 
   const { match, parsed, resumeId, jobId, jdText } = state;
 
+  // Save resumeId to localStorage for history page
+  if (resumeId) {
+    localStorage.setItem('currentResumeId', resumeId);
+  }
+
   async function handleGenerateSuggestions() {
     if (!resumeId || !jdText) {
       setError('Missing resume or job description data');

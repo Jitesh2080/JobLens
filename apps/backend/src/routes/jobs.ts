@@ -1,17 +1,22 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { upload } from '../middleware/upload';
 import { runMatchAgent } from '../agents/matchAgent';
 import { runCoverLetterAgent } from '../agents/coverLetterAgent';
 import { runInterviewAgent } from '../agents/interviewAgent';
 import { parseFile } from '../lib/parser';
 import { db } from '../db/client';
+import { authenticateToken, AuthRequest } from '../middleware/auth';
 
 export const jobsRouter = Router();
 
+// Apply authentication to all job routes
+jobsRouter.use(authenticateToken);
+
 // Accepts either JSON body { jdText } or a file upload
-jobsRouter.post('/analyze', upload.single('jd'), async (req, res) => {
+jobsRouter.post('/analyze', upload.single('jd'), async (req: AuthRequest, res: Response) => {
   try {
     let jdText: string | undefined = req.body?.jdText;
+    const resumeId = req.body?.resumeId; // Get resumeId from request
 
     if (!jdText && req.file) {
       jdText = await parseFile(req.file.buffer, req.file.mimetype);
@@ -22,27 +27,78 @@ jobsRouter.post('/analyze', upload.single('jd'), async (req, res) => {
       return;
     }
 
+    if (!resumeId) {
+      res.status(400).json({ error: 'resumeId is required' });
+      return;
+    }
+
+    // Verify resume belongs to user
+    const { rows: resumeRows } = await db.query(
+      'SELECT id FROM resumes WHERE id = $1 AND user_id = $2',
+      [resumeId, req.userId]
+    );
+
+    if (resumeRows.length === 0) {
+      res.status(403).json({ error: 'Resume not found or access denied' });
+      return;
+    }
+
     const result = await runMatchAgent(jdText);
 
+    // Save job to jobs table with user_id
     const { rows } = await db.query(
-      'INSERT INTO jobs (jd_text) VALUES ($1) RETURNING id',
-      [jdText]
+      'INSERT INTO jobs (user_id, jd_text) VALUES ($1, $2) RETURNING id',
+      [req.userId, jdText]
     );
     const jobId = rows[0].id as string;
 
+    // Save match results to match_results table
+    await db.query(
+      'INSERT INTO match_results (resume_id, job_id, score, strengths, gaps, recommendation) VALUES ($1, $2, $3, $4, $5, $6)',
+      [
+        resumeId,
+        jobId,
+        result.score,
+        JSON.stringify(result.strengths),
+        JSON.stringify(result.gaps),
+        result.recommendation
+      ]
+    );
+
     res.json({ jobId, ...result });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err);
+
+    // Handle rate limit errors from LLM providers
+    if (err?.status === 413 || err?.error?.error?.code === 'rate_limit_exceeded') {
+      res.status(429).json({
+        error: 'API rate limit exceeded. Your resume or job description is too large. Please try with a shorter job description or wait a minute and try again.',
+        code: 'RATE_LIMIT_EXCEEDED'
+      });
+      return;
+    }
+
     res.status(500).json({ error: 'Failed to analyze job description' });
   }
 });
 
-jobsRouter.post('/cover-letter', async (req, res) => {
+jobsRouter.post('/cover-letter', async (req: AuthRequest, res: Response) => {
   try {
     const { resumeId, jobId, jdText, companyName, customPrompt } = req.body;
 
     if (!resumeId || !jdText) {
       res.status(400).json({ error: 'resumeId and jdText are required' });
+      return;
+    }
+
+    // Verify resume belongs to user
+    const { rows: resumeRows } = await db.query(
+      'SELECT id FROM resumes WHERE id = $1 AND user_id = $2',
+      [resumeId, req.userId]
+    );
+
+    if (resumeRows.length === 0) {
+      res.status(403).json({ error: 'Resume not found or access denied' });
       return;
     }
 
@@ -74,12 +130,23 @@ jobsRouter.post('/cover-letter', async (req, res) => {
   }
 });
 
-jobsRouter.post('/interview-prep', async (req, res) => {
+jobsRouter.post('/interview-prep', async (req: AuthRequest, res: Response) => {
   try {
     const { resumeId, jobId, jdText, gaps } = req.body;
 
     if (!resumeId || !jdText) {
       res.status(400).json({ error: 'resumeId and jdText are required' });
+      return;
+    }
+
+    // Verify resume belongs to user
+    const { rows: resumeRows } = await db.query(
+      'SELECT id FROM resumes WHERE id = $1 AND user_id = $2',
+      [resumeId, req.userId]
+    );
+
+    if (resumeRows.length === 0) {
+      res.status(403).json({ error: 'Resume not found or access denied' });
       return;
     }
 

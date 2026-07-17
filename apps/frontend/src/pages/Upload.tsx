@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-
-const API = import.meta.env.VITE_API_URL ?? '';
+import { apiRequest, apiUpload } from '../lib/api';
 
 export default function Upload() {
   const navigate = useNavigate();
@@ -25,16 +23,31 @@ export default function Upload() {
     try {
       const formData = new FormData();
       formData.append('resume', resumeFile);
-      const { data: resumeData } = await axios.post(`${API}/api/resume/upload`, formData);
+      const resumeResponse = await apiUpload('/resume/upload', formData);
+
+      if (!resumeResponse.ok) {
+        const errorData = await resumeResponse.json();
+        throw new Error(errorData.error || 'Failed to upload resume');
+      }
+
+      const resumeData = await resumeResponse.json();
+      console.log('Resume upload response:', resumeData);
+
+      if (!resumeData.docId) {
+        throw new Error('Resume uploaded but no docId received');
+      }
 
       // Run all KB ingestion in parallel after resume is uploaded
       const kbTasks: Promise<unknown>[] = [];
 
       if (githubUrl.trim()) {
         kbTasks.push(
-          axios.post(`${API}/api/kb/github`, {
-            repoUrl: githubUrl.trim(),
-            resumeId: resumeData.docId,
+          apiRequest('/kb/github', {
+            method: 'POST',
+            body: JSON.stringify({
+              repoUrl: githubUrl.trim(),
+              resumeId: resumeData.docId,
+            }),
           })
         );
       }
@@ -43,21 +56,37 @@ export default function Upload() {
         const certForm = new FormData();
         certForm.append('certificate', certificateFile);
         certForm.append('resumeId', resumeData.docId);
-        kbTasks.push(axios.post(`${API}/api/kb/certificate`, certForm));
+        kbTasks.push(apiUpload('/kb/certificate', certForm));
       }
 
       if (portfolioText.trim()) {
         kbTasks.push(
-          axios.post(`${API}/api/kb/portfolio`, {
-            resumeId: resumeData.docId,
-            text: portfolioText.trim(),
+          apiRequest('/kb/portfolio', {
+            method: 'POST',
+            body: JSON.stringify({
+              resumeId: resumeData.docId,
+              text: portfolioText.trim(),
+            }),
           })
         );
       }
 
       if (kbTasks.length > 0) await Promise.all(kbTasks);
 
-      const { data: matchData } = await axios.post(`${API}/api/jobs/analyze`, { jdText });
+      const matchResponse = await apiRequest('/jobs/analyze', {
+        method: 'POST',
+        body: JSON.stringify({
+          jdText,
+          resumeId: resumeData.docId
+        }),
+      });
+
+      if (!matchResponse.ok) {
+        const errorData = await matchResponse.json();
+        throw new Error(errorData.error || 'Failed to analyze job');
+      }
+
+      const matchData = await matchResponse.json();
 
       navigate('/dashboard', {
         state: {
@@ -68,8 +97,9 @@ export default function Upload() {
           jdText: jdText,
         },
       });
-    } catch (err) {
-      setError('Something went wrong. Check the console for details.');
+    } catch (err: any) {
+      const errorMessage = err?.message || 'Something went wrong. Check the console for details.';
+      setError(errorMessage);
       console.error(err);
     } finally {
       setLoading(false);
