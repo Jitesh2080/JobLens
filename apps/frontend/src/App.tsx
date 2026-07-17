@@ -7,6 +7,7 @@ import History from './pages/History';
 import JobDetail from './pages/JobDetail';
 import Login from './pages/Login';
 import LoginCallback from './pages/LoginCallback';
+import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function AppContent() {
@@ -51,6 +52,7 @@ function AppContent() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/login/callback" element={<LoginCallback />} />
+          <Route path="/register" element={<Register />} />
           <Route
             path="/"
             element={
