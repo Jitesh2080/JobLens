@@ -94,12 +94,20 @@ export default function History() {
             {history.length} {history.length === 1 ? 'job' : 'jobs'} analyzed
           </p>
         </div>
-        <button
-          onClick={() => navigate('/upload')}
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
-        >
-          Analyze New Job
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate(-1)}
+            className="text-sm text-gray-400 hover:text-white transition-colors"
+          >
+            ← Back
+          </button>
+          <button
+            onClick={() => navigate('/upload')}
+            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
+          >
+            Analyze New Job
+          </button>
+        </div>
       </div>
 
       {/* History List */}
