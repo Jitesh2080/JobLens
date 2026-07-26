@@ -44,6 +44,8 @@ export default function Dashboard() {
   const [isGeneratingCoverLetter, setIsGeneratingCoverLetter] = useState(false);
   const [isGeneratingInterviewPrep, setIsGeneratingInterviewPrep] = useState(false);
   const [error, setError] = useState('');
+  const [coverLetterError, setCoverLetterError] = useState('');
+  const [interviewError, setInterviewError] = useState('');
   const [suggestionPrompt, setSuggestionPrompt] = useState('');
   const [coverLetterPrompt, setCoverLetterPrompt] = useState('');
   const [companyName, setCompanyName] = useState('');
@@ -106,7 +108,7 @@ export default function Dashboard() {
     }
 
     setIsGeneratingCoverLetter(true);
-    setError('');
+    setCoverLetterError('');
 
     try {
       const { data } = await axios.post(`${API}/api/jobs/cover-letter`, {
@@ -124,7 +126,7 @@ export default function Dashboard() {
       });
     } catch (err) {
       console.error(err);
-      setError('Failed to generate cover letter. Please try again.');
+      setCoverLetterError('Failed to generate cover letter. Please try again.');
     } finally {
       setIsGeneratingCoverLetter(false);
     }
@@ -137,7 +139,7 @@ export default function Dashboard() {
     }
 
     setIsGeneratingInterviewPrep(true);
-    setError('');
+    setInterviewError('');
 
     try {
       const { data } = await axios.post(`${API}/api/jobs/interview-prep`, {
@@ -153,7 +155,7 @@ export default function Dashboard() {
       });
     } catch (err) {
       console.error(err);
-      setError('Failed to generate interview prep. Please try again.');
+      setInterviewError('Failed to generate interview prep. Please try again.');
     } finally {
       setIsGeneratingInterviewPrep(false);
     }
@@ -285,6 +287,11 @@ export default function Dashboard() {
             className="rounded-lg border border-gray-700 bg-gray-950 px-4 py-3 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
+        {coverLetterError && (
+          <div className="rounded-lg bg-red-900/20 border border-red-800 px-4 py-3 text-sm text-red-300">
+            {coverLetterError}
+          </div>
+        )}
       </div>
 
       {/* Interview Prep Section */}
@@ -304,6 +311,11 @@ export default function Dashboard() {
             {isGeneratingInterviewPrep ? 'Generating...' : 'Prepare for Interview'}
           </button>
         </div>
+        {interviewError && (
+          <div className="rounded-lg bg-red-900/20 border border-red-800 px-4 py-3 text-sm text-red-300">
+            {interviewError}
+          </div>
+        )}
       </div>
 
       {/* Cover Letter Modal */}

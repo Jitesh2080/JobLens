@@ -88,12 +88,20 @@ export default function JobDetail() {
             })}
           </p>
         </div>
-        <button
-          onClick={() => navigate('/history')}
-          className="text-sm text-indigo-400 hover:underline"
-        >
-          ← Back to History
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="text-sm text-gray-400 hover:text-white transition-colors"
+          >
+            ← Back
+          </button>
+          <button
+            onClick={() => navigate('/history')}
+            className="text-sm text-indigo-400 hover:underline"
+          >
+            View All History
+          </button>
+        </div>
       </div>
 
       {/* Match Results */}
