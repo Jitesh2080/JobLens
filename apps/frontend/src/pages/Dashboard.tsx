@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { apiRequest } from '../lib/api';
 import MatchScoreCard from '../components/MatchScoreCard';
 import SkillGapChart from '../components/SkillGapChart';
 import SuggestionsReport from '../components/SuggestionsReport';
 import CoverLetterModal from '../components/CoverLetterModal';
-
-const API = import.meta.env.VITE_API_URL ?? '';
 
 interface Suggestion {
   missingKeywords: string[];
@@ -81,12 +79,16 @@ export default function Dashboard() {
     setError('');
 
     try {
-      const { data } = await axios.post(`${API}/api/resume/tailor`, {
-        resumeId,
-        jobId,
-        jdText,
-        customPrompt: suggestionPrompt.trim() || undefined,
+      const res = await apiRequest('/resume/tailor', {
+        method: 'POST',
+        body: JSON.stringify({
+          resumeId,
+          jobId,
+          jdText,
+          customPrompt: suggestionPrompt.trim() || undefined,
+        }),
       });
+      const data = await res.json();
 
       setSuggestionHistory(prev => {
         const updated = [...prev, { data: data.suggestions, version: data.version }];
@@ -111,13 +113,17 @@ export default function Dashboard() {
     setCoverLetterError('');
 
     try {
-      const { data } = await axios.post(`${API}/api/jobs/cover-letter`, {
-        resumeId,
-        jobId,
-        jdText,
-        companyName: companyName.trim() || undefined,
-        customPrompt: coverLetterPrompt.trim() || undefined,
+      const res = await apiRequest('/jobs/cover-letter', {
+        method: 'POST',
+        body: JSON.stringify({
+          resumeId,
+          jobId,
+          jdText,
+          companyName: companyName.trim() || undefined,
+          customPrompt: coverLetterPrompt.trim() || undefined,
+        }),
       });
+      const data = await res.json();
 
       setCoverLetter({
         content: data.content,
@@ -142,14 +148,17 @@ export default function Dashboard() {
     setInterviewError('');
 
     try {
-      const { data } = await axios.post(`${API}/api/jobs/interview-prep`, {
-        resumeId,
-        jobId,
-        jdText,
-        gaps: match.gaps,
+      const res = await apiRequest('/jobs/interview-prep', {
+        method: 'POST',
+        body: JSON.stringify({
+          resumeId,
+          jobId,
+          jdText,
+          gaps: match.gaps,
+        }),
       });
+      const data = await res.json();
 
-      // Navigate to interview prep page with questions
       navigate('/interview-prep', {
         state: { questions: data.questions },
       });
