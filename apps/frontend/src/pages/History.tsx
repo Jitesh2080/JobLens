@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-
-const API = import.meta.env.VITE_API_URL ?? '';
+import { apiRequest } from '../lib/api';
 
 interface JobHistoryItem {
   jobId: string;
@@ -30,7 +28,8 @@ export default function History() {
     const fetchHistory = async () => {
       try {
         // Fetch ALL jobs across all resumes
-        const { data } = await axios.get(`${API}/api/history/all`);
+        const res = await apiRequest('/history/all');
+        const data = await res.json();
         setHistory(data);
       } catch (err) {
         console.error(err);

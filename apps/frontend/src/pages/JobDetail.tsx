@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
+import { apiRequest } from '../lib/api';
 import MatchScoreCard from '../components/MatchScoreCard';
 import SkillGapChart from '../components/SkillGapChart';
 import SuggestionsReport from '../components/SuggestionsReport';
 import CoverLetterModal from '../components/CoverLetterModal';
-
-const API = import.meta.env.VITE_API_URL ?? '';
 
 interface Suggestion {
   missingKeywords: string[];
@@ -37,7 +35,9 @@ export default function JobDetail() {
 
     const fetchJobDetail = async () => {
       try {
-        const { data } = await axios.get(`${API}/api/history/${resumeId}/${jobId}`);
+        const res = await apiRequest(`/history/${resumeId}/${jobId}`);
+        const data = await res.json();
+        setJobData(data);
         setJobData(data);
       } catch (err) {
         console.error(err);
